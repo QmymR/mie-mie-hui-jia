@@ -335,3 +335,59 @@ body.is-touch .panel {
   touch-action: manipulation;
 }
 #mobileBtns button:active { transform: scale(0.92); }
+
+/* ============================================================
+   竖屏分屏：上半屏游戏画面 + 下半屏触摸控制区
+   ============================================================ */
+#controlPad { display: none; }
+
+body.is-touch.split-portrait {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  background: #0f1a14;
+}
+/* 游戏画面保持 16:10，宽 = min(屏宽, 50vh*1.6)，居中放在上半屏 */
+body.is-touch.split-portrait #wrap {
+  width: min(100vw, 80vh);
+  aspect-ratio: 960 / 600;
+  max-height: 50vh;
+  margin: 0 auto;
+  border-radius: 0;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.06);
+}
+/* 下半屏控制区：占屏幕中线以下全部区域 */
+body.is-touch.split-portrait #controlPad {
+  display: block;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 50vh;
+  bottom: 0;
+  z-index: 19;
+  touch-action: none;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.07));
+  border-top: 1px solid rgba(255,255,255,0.12);
+}
+#controlPad .padHint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(255,255,255,0.32);
+  font-size: 14px;
+  letter-spacing: 2px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+/* 竖屏时摇杆改为浮动：清掉固定的 left/bottom，位置由 JS 按触点设定 */
+body.is-touch.split-portrait #joystick {
+  left: 0;
+  top: 0;
+  bottom: auto;
+  width: 128px;
+  height: 128px;
+}
+body.is-touch.split-portrait #joystick:not(.hidden) {
+  display: block;
+}
