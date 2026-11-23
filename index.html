@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1a3a28">
+  <title>咩咩回家 · 羊妈妈收集小羊</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game" width="960" height="600"></canvas>
+
+  <!-- 游戏内 HUD -->
+  <div id="hud" class="hidden">
+    <div id="hearts">❤❤❤</div>
+    <div id="lambs">🐑 0 / 6</div>
+    <div id="difficulty">简单模式</div>
+    <div id="timer">00:00</div>
+  </div>
+  <div id="muteTip">M 静音 · Esc 暂停</div>
+
+  <!-- 主菜单 -->
+  <div class="overlay" id="menu">
+    <div class="panel">
+      <div class="logo">🐑</div>
+      <h1>咩咩回家</h1>
+      <p class="sub">羊妈妈要把走散的小羊崽全部带回家</p>
+      <div class="rules">
+        <p class="only-desktop"><b>WASD / 方向键</b> 移动羊妈妈</p>
+        <p class="only-touch"><b>左下角轮盘</b> 控制羊妈妈移动</p>
+        <p>靠近小羊崽，它就会排好队跟着你走</p>
+        <p>小心大灰狼！被扑到扣一颗心（共 3 颗）</p>
+        <p>集齐 <b>6 只小羊</b>后回到右下角的家就通关</p>
+      </div>
+      <div class="difficultyPicker" role="group" aria-label="选择游戏难度">
+        <button type="button" id="btnEasy" class="difficultyBtn selected" aria-pressed="true">
+          <strong>简单模式</strong>
+          <small>狼只会直接追赶</small>
+        </button>
+        <button type="button" id="btnHard" class="difficultyBtn" aria-pressed="false">
+          <strong>困难模式</strong>
+          <small>双狼会配合包抄</small>
+        </button>
+      </div>
+      <button id="btnStart" class="btn">开 始 游 戏</button>
+    </div>
+  </div>
+
+  <!-- 暂停 -->
+  <div class="overlay hidden" id="pause">
+    <div class="panel">
+      <h2>休息一下</h2>
+      <button id="btnResume" class="btn">继 续</button>
+      <button id="btnPauseMenu" class="btn ghost">回 到 标 题</button>
+    </div>
+  </div>
+
+  <!-- 胜利 -->
+  <div class="overlay hidden" id="win">
+    <div class="panel">
+      <div class="logo">🎉</div>
+      <h1 class="winTitle">全员回家啦！</h1>
+      <p class="sub" id="winSub">小羊们都安全到家</p>
+      <button id="btnWinAgain" class="btn">再 玩 一 次</button>
+      <button id="btnWinMenu" class="btn ghost">回 到 标 题</button>
+    </div>
+  </div>
+
+  <!-- 失败 -->
+  <div class="overlay hidden" id="lose">
+    <div class="panel">
+      <div class="logo">💦</div>
+      <h1 class="loseTitle">被大灰狼抓住了…</h1>
+      <p class="sub" id="loseSub">再试一次，小羊们还在等你</p>
+      <button id="btnLoseAgain" class="btn">再 试 一 次</button>
+      <button id="btnLoseMenu" class="btn ghost">回 到 标 题</button>
+    </div>
+  </div>
+
+  <div id="toast" class="hidden"></div>
+
+  <!-- 手机虚拟轮盘 -->
+  <div id="joystick" class="hidden">
+    <div id="joyBase"><div id="joyKnob"></div></div>
+  </div>
+
+  <!-- 手机按钮：静音 / 暂停 -->
+  <div id="mobileBtns" class="hidden">
+    <button type="button" id="btnMuteMobile" aria-label="静音">🔊</button>
+    <button type="button" id="btnPauseMobile" class="hidden" aria-label="暂停">⏸</button>
+  </div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>
