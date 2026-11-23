@@ -264,8 +264,26 @@
   function toast(text, dur = 1600) {
     el.toast.textContent = text;
     el.toast.classList.remove("hidden");
+    positionToast();
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => el.toast.classList.add("hidden"), dur);
+  }
+
+  // 把提示条放到画布上方的深色背景区（完全不挡游戏）；上方没空间时回退到画布内顶部 + 低透明度
+  function positionToast() {
+    const wrap = $("wrap");
+    if (!wrap || !el.toast) return;
+    void el.toast.offsetWidth; // 强制重排，确保 offsetHeight 准确
+    const wrapRect = wrap.getBoundingClientRect();
+    const toastH = el.toast.offsetHeight || 44;
+    const gap = 10;
+    if (wrapRect.top > toastH + gap + 6) {
+      el.toast.style.top = (wrapRect.top - toastH - gap) + "px";
+      el.toast.classList.add("toast-outside");
+    } else {
+      el.toast.style.top = Math.max(8, wrapRect.top + 10) + "px";
+      el.toast.classList.remove("toast-outside");
+    }
   }
 
   /* ---------------- 输入 ---------------- */
@@ -329,6 +347,7 @@
       if (wrap) wrap.style.marginTop = "";
     }
     setMobileControls(state.playing);
+    positionToast();
   }
 
   function updateMuteIcon() { btnMuteMobile.textContent = muted ? "🔇" : "🔊"; }
@@ -441,6 +460,11 @@
     // 横竖屏切换时重排布局
     window.addEventListener("resize", updateLayout);
     window.addEventListener("orientationchange", () => setTimeout(updateLayout, 200));
+  }
+
+  // 桌面端（非触控）窗口尺寸变化时也重算提示条位置；触控端由 updateLayout 负责
+  if (!isTouch) {
+    window.addEventListener("resize", positionToast);
   }
 
   /* ---------------- 更新 ---------------- */
