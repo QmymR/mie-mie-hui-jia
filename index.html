@@ -29,7 +29,7 @@
       <p class="sub">羊妈妈要把走散的小羊崽全部带回家</p>
       <div class="rules">
         <p class="only-desktop"><b>WASD / 方向键</b> 移动羊妈妈</p>
-        <p class="only-touch"><b>左下角轮盘</b> 控制羊妈妈移动</p>
+        <p class="only-touch"><b>下半屏任意位置</b> 按住拖动，控制羊妈妈移动</p>
         <p>靠近小羊崽，它就会排好队跟着你走</p>
         <p>小心大灰狼！被扑到扣一颗心（共 3 颗）</p>
         <p>集齐 <b>6 只小羊</b>后回到右下角的家就通关</p>
@@ -90,6 +90,11 @@
   <div id="mobileBtns" class="hidden">
     <button type="button" id="btnMuteMobile" aria-label="静音">🔊</button>
     <button type="button" id="btnPauseMobile" class="hidden" aria-label="暂停">⏸</button>
+  </div>
+
+  <!-- 竖屏下半屏控制区：按下任意位置浮出摇杆 -->
+  <div id="controlPad" class="hidden">
+    <div class="padHint">按住拖动 · 控制移动</div>
   </div>
 </div>
 <script src="game.js"></script>
