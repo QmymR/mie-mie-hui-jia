@@ -300,12 +300,48 @@
   /* ---------------- 手机：轮盘 / 按钮 ---------------- */
   const joyEl = $("joystick"), joyBase = $("joyBase"), joyKnob = $("joyKnob");
   const mobileBtns = $("mobileBtns");
+  const controlPad = $("controlPad");
   const btnMuteMobile = $("btnMuteMobile"), btnPauseMobile = $("btnPauseMobile");
+
+  // 竖屏分屏：上半屏游戏画面 + 下半屏控制区；横屏：全屏 + 左下角固定轮盘
+  function isPortraitSplit() {
+    return isTouch && window.innerHeight > window.innerWidth;
+  }
+  function updateLayout() {
+    const portrait = isPortraitSplit();
+    document.body.classList.toggle("split-portrait", portrait);
+    document.body.classList.toggle("split-landscape", !portrait);
+    // 清掉摇杆内联定位：横屏交回 CSS 默认位置，竖屏由按下事件重新定位
+    joyEl.style.left = "";
+    joyEl.style.top = "";
+    joyEl.style.bottom = "";
+    resetJoy();
+    const wrap = $("wrap");
+    if (portrait) {
+      joyEl.classList.add("hidden"); // 竖屏默认隐藏，按下才浮出
+      // 游戏画面在「上半屏」区域内垂直居中
+      if (wrap) {
+        const h = wrap.getBoundingClientRect().height;
+        const top = Math.max(0, (window.innerHeight * 0.5 - h) / 2);
+        wrap.style.marginTop = top + "px";
+      }
+    } else {
+      if (wrap) wrap.style.marginTop = "";
+    }
+    setMobileControls(state.playing);
+  }
 
   function updateMuteIcon() { btnMuteMobile.textContent = muted ? "🔇" : "🔊"; }
   function setMobileControls(visible) {
     if (!isTouch) return;
-    joyEl.classList.toggle("hidden", !visible);
+    const portrait = isPortraitSplit();
+    if (portrait) {
+      controlPad.classList.toggle("hidden", !visible);
+      joyEl.classList.add("hidden"); // 竖屏由控制区的按下事件控制显示
+    } else {
+      controlPad.classList.add("hidden");
+      joyEl.classList.toggle("hidden", !visible);
+    }
     mobileBtns.classList.toggle("hidden", !visible);
     btnPauseMobile.classList.toggle("hidden", !visible || !state.playing || state.over);
   }
@@ -325,16 +361,16 @@
       joy.x = dx / max;
       joy.y = dy / max;
     };
-    const onStart = (e) => {
+    // 以当前摇杆中心为基准开始（横屏固定中心 / 竖屏浮动到触点）
+    const startAt = (cx, cy) => {
       if (!state.playing || state.paused || state.over) return;
-      if (e.cancelable) e.preventDefault();
-      const t = e.touches ? e.touches[0] : e;
       const rect = joyBase.getBoundingClientRect();
       joy.baseX = rect.left + rect.width / 2;
       joy.baseY = rect.top + rect.height / 2;
       joy.active = true;
       joyEl.classList.add("on");
-      updateJoy(t.clientX, t.clientY);
+      joyEl.classList.remove("hidden");
+      updateJoy(cx, cy);
     };
     const onMove = (e) => {
       if (!joy.active) return;
@@ -342,13 +378,46 @@
       const t = e.touches ? e.touches[0] : e;
       updateJoy(t.clientX, t.clientY);
     };
-    const onEnd = () => { resetJoy(); };
-    joyBase.addEventListener("touchstart", onStart, { passive: false });
+    const onEnd = () => {
+      resetJoy();
+      if (isPortraitSplit()) joyEl.classList.add("hidden"); // 竖屏抬起即隐藏
+    };
+
+    // 横屏：固定轮盘直接接收触摸
+    joyBase.addEventListener("touchstart", (e) => {
+      if (isPortraitSplit()) return; // 竖屏交给下半屏控制区
+      if (e.cancelable) e.preventDefault();
+      const t = e.touches ? e.touches[0] : e;
+      startAt(t.clientX, t.clientY);
+    }, { passive: false });
     joyBase.addEventListener("touchmove", onMove, { passive: false });
     joyBase.addEventListener("touchend", onEnd);
     joyBase.addEventListener("touchcancel", onEnd);
-    // 桌面鼠标调试
-    joyBase.addEventListener("mousedown", onStart);
+
+    // 竖屏：下半屏控制区，手指按下处以触点为中心浮出摇杆
+    if (controlPad) {
+      controlPad.addEventListener("touchstart", (e) => {
+        if (!isPortraitSplit()) return;
+        if (!state.playing || state.paused || state.over) return;
+        if (e.cancelable) e.preventDefault();
+        const t = e.touches[0];
+        const pad = controlPad.getBoundingClientRect();
+        // 摇杆 128×128，中心对准触点，并钳制在控制区内不越界
+        let left = t.clientX - 64, top = t.clientY - 64;
+        left = clamp(left, pad.left, pad.right - 128);
+        top = clamp(top, pad.top, pad.bottom - 128);
+        joyEl.style.left = left + "px";
+        joyEl.style.top = top + "px";
+        joyEl.style.bottom = "auto";
+        startAt(t.clientX, t.clientY);
+      }, { passive: false });
+      controlPad.addEventListener("touchmove", onMove, { passive: false });
+      controlPad.addEventListener("touchend", onEnd);
+      controlPad.addEventListener("touchcancel", onEnd);
+    }
+
+    // 桌面鼠标调试（?touch=1 预览）
+    joyBase.addEventListener("mousedown", (e) => startAt(e.clientX, e.clientY));
     window.addEventListener("mousemove", (e) => { if (joy.active) updateJoy(e.clientX, e.clientY); });
     window.addEventListener("mouseup", onEnd);
   }
@@ -356,20 +425,15 @@
   if (isTouch) {
     setupJoystick();
     updateMuteIcon();
+    updateLayout();
     // 首次触控解锁 WebAudio
     const unlockAudio = () => { initAudio(); document.removeEventListener("touchstart", unlockAudio); };
     document.addEventListener("touchstart", unlockAudio, { once: true });
     btnMuteMobile.addEventListener("click", () => { toggleMute(); updateMuteIcon(); });
     btnPauseMobile.addEventListener("click", togglePause);
-    // 竖屏提示一次
-    const hintPortrait = () => {
-      if (!joyPortraitHinted && window.innerHeight > window.innerWidth) {
-        joyPortraitHinted = true;
-        toast("横屏体验更佳哦～", 1800);
-      }
-    };
-    window.addEventListener("resize", hintPortrait);
-    setTimeout(hintPortrait, 600);
+    // 横竖屏切换时重排布局
+    window.addEventListener("resize", updateLayout);
+    window.addEventListener("orientationchange", () => setTimeout(updateLayout, 200));
   }
 
   /* ---------------- 更新 ---------------- */
