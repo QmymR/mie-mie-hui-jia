@@ -364,12 +364,13 @@
     // 以当前摇杆中心为基准开始（横屏固定中心 / 竖屏浮动到触点）
     const startAt = (cx, cy) => {
       if (!state.playing || state.paused || state.over) return;
+      // 必须先显示再读尺寸：display:none 时 getBoundingClientRect 全为 0，会导致基准点错误
+      joyEl.classList.remove("hidden");
       const rect = joyBase.getBoundingClientRect();
       joy.baseX = rect.left + rect.width / 2;
       joy.baseY = rect.top + rect.height / 2;
       joy.active = true;
       joyEl.classList.add("on");
-      joyEl.classList.remove("hidden");
       updateJoy(cx, cy);
     };
     const onMove = (e) => {
@@ -394,26 +395,32 @@
     joyBase.addEventListener("touchend", onEnd);
     joyBase.addEventListener("touchcancel", onEnd);
 
-    // 竖屏：下半屏控制区，手指按下处以触点为中心浮出摇杆
+    // 竖屏：下半屏控制区，手指/鼠标按下处以触点为中心浮出摇杆
+    const beginFloat = (cx, cy) => {
+      if (!isPortraitSplit()) return false;
+      if (!state.playing || state.paused || state.over) return false;
+      const pad = controlPad.getBoundingClientRect();
+      // 摇杆 128×128，中心对准触点，并钳制在控制区内不越界
+      let left = cx - 64, top = cy - 64;
+      left = clamp(left, pad.left, pad.right - 128);
+      top = clamp(top, pad.top, pad.bottom - 128);
+      joyEl.style.left = left + "px";
+      joyEl.style.top = top + "px";
+      joyEl.style.bottom = "auto";
+      startAt(cx, cy);
+      return true;
+    };
     if (controlPad) {
       controlPad.addEventListener("touchstart", (e) => {
-        if (!isPortraitSplit()) return;
-        if (!state.playing || state.paused || state.over) return;
         if (e.cancelable) e.preventDefault();
         const t = e.touches[0];
-        const pad = controlPad.getBoundingClientRect();
-        // 摇杆 128×128，中心对准触点，并钳制在控制区内不越界
-        let left = t.clientX - 64, top = t.clientY - 64;
-        left = clamp(left, pad.left, pad.right - 128);
-        top = clamp(top, pad.top, pad.bottom - 128);
-        joyEl.style.left = left + "px";
-        joyEl.style.top = top + "px";
-        joyEl.style.bottom = "auto";
-        startAt(t.clientX, t.clientY);
+        beginFloat(t.clientX, t.clientY);
       }, { passive: false });
       controlPad.addEventListener("touchmove", onMove, { passive: false });
       controlPad.addEventListener("touchend", onEnd);
       controlPad.addEventListener("touchcancel", onEnd);
+      // 桌面预览（?touch=1）：鼠标按下控制区同样可用
+      controlPad.addEventListener("mousedown", (e) => { beginFloat(e.clientX, e.clientY); });
     }
 
     // 桌面鼠标调试（?touch=1 预览）
